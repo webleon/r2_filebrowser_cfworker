@@ -31,7 +31,7 @@ async function checkRateLimit(ip, namespace) {
 }
 
 // =================================================================
-// 辅助函数：文件服务
+// 辅助函数：文件服务 (已修复)
 // =================================================================
 async function serveFile(bucket, key) {
     const object = await bucket.get(key);
@@ -40,6 +40,9 @@ async function serveFile(bucket, key) {
         return new Response("文件未找到 (File not found)", { status: 404 });
     }
 
+    // 核心修复：添加 Content-Disposition 头部，强制浏览器使用 key 作为下载文件名
+    const contentDisposition = `attachment; filename="${key}"`;
+    
     // 核心：设置 Cache-Control 头部，实现浏览器缓存，减少重复请求
     const cacheControl = "public, max-age=3600"; // 缓存 1 小时
 
@@ -48,6 +51,7 @@ async function serveFile(bucket, key) {
             "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
             "Cache-Control": cacheControl,
             "Content-Length": object.size,
+            "Content-Disposition": contentDisposition, // <-- 修复点
         },
     });
 }
